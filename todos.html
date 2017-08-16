@@ -17,9 +17,11 @@
             placeholder="例如：吃饭睡觉打豆豆；    提示：+回车即可添加任务"
             class="task-input"
             type="text"
+            v-model="inputvalue"
+            @keyup.enter="add"
         />
-        <ul class="task-count">
-            <li>1个任务未完成</li>
+        <ul class="task-count" v-if="itemarr.length!==0">
+            <li>{{noCheckedLength}}个任务未完成</li>
             <li class="action">
                 <a class="active" href="#">所有任务</a>
                 <a href="#">未完成的任务</a>
@@ -29,20 +31,26 @@
         <h3 class="big-title">任务列表：</h3>
         <div class="tasks">
 
-            <span class="no-task-tip">还没有添加任何任务</span>
+            <span class="no-task-tip" v-if="itemarr.length===0">还没有添加任何任务</span>
             <ul class="todo-list">
                 <!--class   editing-->
-                <li class="todo completed" >
+                <li class="todo" :class="{completed: todo.checked,editing:todo===editorTodos}" v-for="todo in itemarr" >
                     <div class="view">
-                        <input class="toggle" type="checkbox"/>
-                        <label>11111111111111111</label>
-                        <button class="destroy"></button>
+                        <input class="toggle" v-model="todo.checked" type="checkbox"/>
+                        <label @dblclick="editorTodo(todo)">{{todo.name}}</label>
+                        <button class="destroy" @click="deleteTodo(todo)"></button>
                     </div>
                     <input
                         class="edit"
                         type="text"
+                        v-model="todo.name"
+                        v-focus="todo===editorTodos"
+                        @blur="editedTodo"
+                        @keyup.13="editedTodo"
+                        @keyup.esc="cancelEdit(todo)"
                     />
                 </li>
+
             </ul>
         </div>
     </div>
@@ -50,16 +58,63 @@
     <script type="text/javascript">
         var data = [
             {
-                name:'很好'
+                name:'很好',
+                checked:false
             },{
-                name:'测试一下'
+                name:'测试一下',
+                checked:true
             }
         ];
 
         var app = new Vue({
             el:'#app',
             data:{
-                itemarr:data
+                itemarr:data,
+                inputvalue:'',
+                editorTodos:null,
+                beforeTodo:null
+            },
+            computed:{//计算属性
+                noCheckedLength: function(){
+                    return this.itemarr.filter(function(item){
+                        return !item.checked
+                    }).length;
+                }
+            },
+            methods:{
+                add:function(){//添加
+                    this.itemarr.push({
+                        name:this.inputvalue,
+                        checked:false
+                    });
+                    this.inputvalue = '';
+                },
+                deleteTodo:function(todo){//删除
+                    var index = this.itemarr.indexOf(todo);
+                    this.itemarr.splice(index,1);
+                },
+                editorTodo:function(todo){//开始编辑
+                    this.editorTodos = todo;
+                    this.beforeTodo = todo.name;
+                },
+                editedTodo:function(){//完成编辑
+                    this.editorTodos = null;
+                },
+                cancelEdit:function(todo){//取消编辑
+                    todo.name=this.beforeTodo;
+                    this.editorTodos = null;
+                    this.beforeTodo = null;
+                }
+
+            },
+            directives:{//自定义命令
+                "focus":{
+                    update(el,binding){
+                        if(binding.value){
+                            el.focus();
+                        }
+                    }
+                }
             }
         });
     </script>

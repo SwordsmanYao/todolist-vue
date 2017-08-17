@@ -20,21 +20,21 @@
             v-model="inputvalue"
             @keyup.enter="add"
         />
-        <ul class="task-count" v-if="itemarr.length!==0">
+        <ul class="task-count" v-if="list.length!==0">
             <li>{{noCheckedLength}}个任务未完成</li>
             <li class="action">
-                <a class="active" href="#">所有任务</a>
-                <a href="#">未完成的任务</a>
-                <a href="#">完成的任务</a>
+                <a :class="{active: hashName==='all'}" href="#all">所有任务</a>
+                <a :class="{active: hashName==='unfinished'}" href="#unfinished">未完成的任务</a>
+                <a :class="{active: hashName==='finished'}" href="#finished">完成的任务</a>
             </li>
         </ul>
         <h3 class="big-title">任务列表：</h3>
         <div class="tasks">
 
-            <span class="no-task-tip" v-if="itemarr.length===0">还没有添加任何任务</span>
+            <span class="no-task-tip" v-if="list.length===0">还没有添加任何任务</span>
             <ul class="todo-list">
                 <!--class   editing-->
-                <li class="todo" :class="{completed: todo.checked,editing:todo===editorTodos}" v-for="todo in itemarr" >
+                <li class="todo" :class="{completed: todo.checked,editing:todo===editorTodos}" v-for="todo in afterFilterList" >
                     <div class="view">
                         <input class="toggle" v-model="todo.checked" type="checkbox"/>
                         <label @dblclick="editorTodo(todo)">{{todo.name}}</label>
@@ -80,40 +80,60 @@
         var app = new Vue({
             el:'#app',
             data:{
-                itemarr:data,
+                list:data,
                 inputvalue:'',
-                editorTodos:null,
-                beforeTodo:null
+                editorTodos:null,//正在编辑的对象
+                beforeTodo:null,//记录编辑前的name，以便取消时回滚
+                hashName:'all'//通过这个值的变化对list进行筛选
             },
             watch:{
-                // itemarr:function(){
-                //     store.save("todosdata",this.itemarr);
+                // list:function(){
+                //     store.save("todosdata",this.list);
                 // }
-                itemarr:{
+                list:{
                     handler:function(){
-                        store.save("todosdata",this.itemarr);
+                        store.save("todosdata",this.list);
                     },
                     deep:true
                 }
             },
             computed:{//计算属性
-                noCheckedLength: function(){
-                    return this.itemarr.filter(function(item){
+                noCheckedLength: function(){//计算未完成的任务数
+                    return this.list.filter(function(item){
                         return !item.checked
                     }).length;
+                },
+                afterFilterList: function(){//过滤后要显示的list
+                    var filter = {
+                        all: function(list){
+                            return list;
+                        },
+                        unfinished: function(list){
+                            return list.filter(function(item){
+                                return !item.checked
+                            });
+                        },
+                        finished: function(list){
+                            return list.filter(function(item){
+                                return item.checked
+                            });
+                        }
+                    };
+
+                    return filter[this.hashName](this.list);
                 }
             },
             methods:{
                 add:function(){//添加
-                    this.itemarr.push({
+                    this.list.push({
                         name:this.inputvalue,
                         checked:false
                     });
                     this.inputvalue = '';
                 },
                 deleteTodo:function(todo){//删除
-                    var index = this.itemarr.indexOf(todo);
-                    this.itemarr.splice(index,1);
+                    var index = this.list.indexOf(todo);
+                    this.list.splice(index,1);
                 },
                 editorTodo:function(todo){//开始编辑
                     this.editorTodos = todo;
@@ -127,7 +147,6 @@
                     this.editorTodos = null;
                     this.beforeTodo = null;
                 }
-
             },
             directives:{//自定义命令
                 "focus":{
@@ -139,6 +158,19 @@
                 }
             }
         });
+
+        function watchHashChange(){
+            var hash = window.location.hash.slice(1);
+
+            //只有在这三个状态时才修改hashNamev
+            var status = ['all','unfinished','finished'];
+            if(status.indexOf(hash)!==-1){
+                app.hashName = hash;
+            }
+        }
+        watchHashChange();
+        //监控hash变化
+        window.addEventListener("hashchange",watchHashChange);
     </script>
 </body>
 </html>

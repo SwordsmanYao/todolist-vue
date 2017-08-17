@@ -56,15 +56,26 @@
     </div>
     <script src="vue.js"></script>
     <script type="text/javascript">
-        var data = [
-            {
-                name:'很好',
-                checked:false
-            },{
-                name:'测试一下',
-                checked:true
+
+        var store = {
+            save(key,value){
+                localStorage.setItem(key,JSON.stringify(value));
+            },
+            fetch(key){
+                return JSON.parse(localStorage.getItem(key)) || [];
             }
-        ];
+        }
+
+        // var data = [
+        //     {
+        //         name:'很好',
+        //         checked:false
+        //     },{
+        //         name:'测试一下',
+        //         checked:true
+        //     }
+        // ];
+        var data = store.fetch("todosdata");
 
         var app = new Vue({
             el:'#app',
@@ -73,6 +84,17 @@
                 inputvalue:'',
                 editorTodos:null,
                 beforeTodo:null
+            },
+            watch:{
+                // itemarr:function(){
+                //     store.save("todosdata",this.itemarr);
+                // }
+                itemarr:{
+                    handler:function(){
+                        store.save("todosdata",this.itemarr);
+                    },
+                    deep:true
+                }
             },
             computed:{//计算属性
                 noCheckedLength: function(){
